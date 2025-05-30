@@ -1,0 +1,162 @@
+﻿@model OrderManagement.ViewModels.NewOrderViewModel
+
+@{
+    ViewData["Title"] = "Cadastrar Pedido";
+    var index = 0;
+}
+
+<div class="container mt-4">
+    <h2>Cadastrar Pedido</h2>
+
+    <form id="create-order-form">
+        <div class="mb-3">
+            <label for="customerSelect" class="form-label">Cliente</label>
+            <select class="form-select" id="customerSelect" name="CustomerId" required>
+                <option value="">Selecione um cliente</option>
+                @foreach (var customer in Model.Customers)
+                {
+                    <option value="@customer.Id">@customer.Name</option>
+                }
+            </select>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Produtos</label>
+            <table class="table table-bordered align-middle">
+                <thead class="table-light">
+                    <tr>
+                        <th>Produto</th>
+                        <th>Preço</th>
+                        <th>Estoque</th>
+                        <th>Quantidade</th>
+                        <th>Total</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var product in Model.Products)
+                    {
+                        var disabled = product.StockQuantity == 0 ? "disabled" : "";
+                        var priceStr = product.Price.ToString("F2", System.Globalization.CultureInfo.InvariantCulture);
+                        <tr>
+                            <td>
+                                @product.Name
+                                <input type="hidden" name="Items.Index" value="@index" />
+                                <input type="hidden" name="Items[@index].ProductId" value="@product.Id" />
+                                <input type="hidden" name="Items[@index].UnitPrice" value="@priceStr" />
+                            </td>
+                            <td>R$ @product.Price</td>
+                            <td>@product.StockQuantity</td>
+                            <td>
+                                <input type="number"
+                                       name="Items[@index].Quantity"
+                                       id="quantity-@product.Id"
+                                       class="form-control quantity-input"
+                                       min="0"
+                                       max="@product.StockQuantity"
+                                       value="0"
+                                       data-product-id="@product.Id"
+                                       data-price="@priceStr"
+                                @disabled />
+                            </td>
+                            <td>
+                                <span id="total-@product.Id">R$ 0.00</span>
+                            </td>
+                        </tr>
+                        index++;
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Valor Total do Pedido</label>
+            <input type="text" class="form-control" id="totalAmount" name="TotalAmount" readonly />
+        </div>
+
+        <button type="button" class="btn btn-primary" id="submitOrderBtn">Criar Pedido</button>
+    </form>
+</div>
+
+@section Scripts {
+    <script>
+        // Updates total amount when adding/removing products from the order
+        $(document).ready(function () {
+            function updateTotalAmount() {
+                let total = 0;
+
+                $('.quantity-input').each(function () {
+                    const productId = $(this).data('product-id');
+                    const quantity = parseInt($(this).val()) || 0;
+                    const price = parseFloat($(this).data('price'));
+
+                    if (quantity > 0 && !isNaN(price)) {
+                        const subtotal = quantity * price;
+                        $('#total-' + productId).text('R$ ' + subtotal.toFixed(2).replace('.', ','));
+                        total += subtotal;
+                    } else {
+                        $('#total-' + productId).text('R$ 0,00');
+                    }
+                });
+
+                $('#totalAmount').val(total.toFixed(2).replace('.', ','));
+            }
+
+            $(document).on('input', '.quantity-input', updateTotalAmount);
+            updateTotalAmount();
+
+            // Send AJAX request to create order
+            $('#submitOrderBtn').on('click', function () {
+
+                const customerId = $('#customerSelect').val();
+                if (!customerId) {
+                    alert("Por favor, selecione um cliente.");
+                    return;
+                }
+
+                const orderItems = [];
+
+                // Get the order items
+                $('.quantity-input').each(function () {
+                    const productId = $(this).data('product-id');
+                    const quantity = parseInt($(this).val()) || 0;
+                    const price = parseFloat($(this).data('price'));
+
+                    if (quantity > 0 && !isNaN(price)) {
+                        orderItems.push({
+                            ProductId: productId,
+                            Quantity: quantity,
+                            UnitPrice: price
+                        });
+                    }
+                });
+
+                const totalAmount = parseFloat($('#totalAmount').val().replace(',', '.'));
+
+                const newOrder = {
+                    CustomerId: customerId,
+                    TotalAmount: totalAmount,
+                    Items: orderItems
+                };
+
+                $.ajax({
+                    url: 'https://localhost:7037/api/orders',
+                    type: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify(newOrder),
+                    success: function (response) {
+                        window.location.href = `/Orders/ConfirmationOrder/${response.id}`;
+                    },
+                    error: function (error) {
+                        console.error('Erro ao criar pedido', error);
+
+                        if (error.responseJSON && error.responseJSON.message) {
+                            alert(error.responseJSON.message);
+                        } else {
+                            alert("Ocorreu um erro ao processar a solicitação. Tente novamente.");
+                        }
+                    }
+                });
+            });
+        });
+    </script>
+}

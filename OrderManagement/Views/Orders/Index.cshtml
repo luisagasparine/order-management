@@ -1,0 +1,137 @@
+﻿@model IEnumerable<Customer>
+
+<div class="container mt-4">
+    <h2>Lista de Pedidos</h2>
+
+    <!-- Filter -->
+    <div class="mb-3">
+        <label for="filterCustomer" class="form-label">Filtrar por Cliente</label>
+        <select class="form-select" id="filterCustomer">
+            <option value="">Todos os clientes</option>
+            @foreach (var customer in Model)
+            {
+                <option value="@customer.Id">@customer.Name</option>
+            }
+        </select>
+    </div>
+
+    <div class="mb-3">
+        <label for="filterStatus" class="form-label">Filtrar por Status</label>
+        <select class="form-select" id="filterStatus">
+            <option value="">Todos os Status</option>
+            <option value="Novo">Novo</option>
+            <option value="Processando">Processando</option>
+            <option value="Finalizado">Finalizado</option>
+        </select>
+    </div>
+
+    <a href="@Url.Action("CreateOrder", "Orders")" class="btn btn-success">Cadastrar Pedido</a>
+
+    <!-- Order Table -->
+    <table class="table table-bordered mt-4">
+        <thead>
+            <tr>
+                <th>Cliente</th>
+                <th>Data do Pedido</th>
+                <th>Valor Total</th>
+                <th>Status</th>
+                <th>Ações</th>
+            </tr>
+        </thead>
+        <tbody id="listaPedidos">
+        </tbody>
+    </table>
+</div>
+
+@section Scripts {
+
+    <script>
+        // Returns orders with or without filter
+        async function getOrders(filterCustomer = '', filterStatus = '') {
+            try {
+                const response = await $.ajax({
+                    url: `https://localhost:7037/api/orders?idCustomer=${filterCustomer}&status=${filterStatus}`,
+                    type: 'GET'
+                });
+
+                const tbody = $('#listaPedidos');
+                tbody.empty();
+
+                response.forEach(order => {
+                    const rawDate = order.orderDate;
+                    const formattedDate = dayjs(rawDate).format('DD/MM/YYYY');
+
+                    const row = `
+                                <tr>
+                                    <td>${order.customer.name}</td>
+                                    <td>${formattedDate}</td>
+                                    <td>R$ ${order.totalAmount.toFixed(2)}</td>
+                                    <td>
+                                        <select class="status-dropdown" data-order-id="${order.id}">
+                                            <option value="Novo" ${order.status === 'Novo' ? 'selected' : ''}>Novo</option>
+                                            <option value="Processando" ${order.status === 'Processando' ? 'selected' : ''}>Processando</option>
+                                            <option value="Finalizado" ${order.status === 'Finalizado' ? 'selected' : ''}>Finalizado</option>
+                                        </select>
+                                    </td>
+                                    <td>
+                                       <a href="/Orders/DetailsOrder?id=${order.id}" class="btn btn-info btn-sm">Detalhes</a>
+                                    </td>
+                                </tr>`;
+                    tbody.append(row);
+                });
+            } catch (error) {
+                console.error("Erro ao carregar pedidos", error);
+
+                if (error.responseJSON && error.responseJSON.message) {
+                    alert(error.responseJSON.message);
+                } else {
+                    alert("Ocorreu um erro ao processar a solicitação. Tente novamente.");
+                }
+            }
+        }
+
+        // If the action is confirmed, update the order status
+        $(document).on('change', '.status-dropdown', function () {
+            const orderId = $(this).data('order-id');
+            const newStatus = $(this).val();
+
+            const confirmation = confirm(`Você tem certeza que deseja mudar o status para "${newStatus}"?`);
+
+            if (confirmation) {
+
+                $.ajax({
+                    url: `https://localhost:7037/api/orders/status`,
+                    type: 'PUT',
+                    contentType: 'application/json',
+                    data: JSON.stringify({ id: orderId, status: newStatus }),
+                    success: function () {
+                        alert("Status atualizado com sucesso!");
+                    },
+                    error: function (error) {
+                        console.error('Erro ao atualizar status', error);
+
+                        if (error.responseJSON && error.responseJSON.message) {
+                            alert(error.responseJSON.message);
+                        } else {
+                            alert("Ocorreu um erro ao processar a solicitação. Tente novamente.");
+                        }
+                    }
+                });
+            } else {
+                console.log("Alteração de status cancelada.");
+            }
+        });
+
+        $(document).ready(function () {
+            getOrders();
+
+            // Event listener to filter orders based on the changes in the selects.
+            $('#filterCustomer, #filterStatus').on('change', function () {
+                const customer = $('#filterCustomer').val();
+                const status = $('#filterStatus').val();
+
+                getOrders(customer, status);
+            });
+        });
+    </script>
+}

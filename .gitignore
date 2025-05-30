@@ -1,0 +1,44 @@
+# Compiled files
+bin/
+obj/
+
+# User-specific files
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# Build results
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
+build/
+bld/
+[Bb]in/
+[Oo]bj/
+
+# ASP.NET temporary files
+wwwroot/lib/
+wwwroot/node_modules/
+
+# Visual Studio cache
+.vs/
+.vscode/
+
+# Log files
+*.log
+
+# Package directories
+node_modules/
+packages/
+*.nupkg
+
+# Others
+*.DS_Store
+Thumbs.db
+*.dbmdl
+
+# Secret files
+appsettings.Development.json
+secrets.json

@@ -1,0 +1,41 @@
+﻿<div class="container-fluid">
+    <header class="d-flex justify-content-between align-items-center py-3 mb-4 border-bottom">
+        <h1 class="h2">Gerenciamento de Pedidos</h1>
+    </header>
+
+    <div class="row">
+        <!-- Customers Card -->
+        <div class="col-md-4">
+            <div class="card text-white bg-primary mb-4">
+                <div class="card-body">
+                    <h5 class="card-title">Clientes</h5>
+                    <p class="card-text">Gerencie os clientes da loja: cadastre, edite ou remova clientes.</p>
+                    <a class="btn btn-light" asp-area="" asp-controller="Customers" asp-action="Index">Gerenciar Clientes</a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Products Card -->
+        <div class="col-md-4">
+            <div class="card text-white bg-success mb-4">
+                <div class="card-body">
+                    <h5 class="card-title">Produtos</h5>
+                    <p class="card-text">Cadastre e gerencie os produtos disponíveis para venda.</p>
+                    <a class="btn btn-light" asp-area="" asp-controller="Products" asp-action="Index">Gerenciar Produtos</a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Orders Card -->
+        <div class="col-md-4">
+            <div class="card text-white bg-warning mb-4">
+                <div class="card-body">
+                    <h5 class="card-title">Pedidos</h5>
+                    <p class="card-text">Registre e acompanhe os pedidos feitos pelos clientes.</p>
+                    <a class="btn btn-light" asp-area="" asp-controller="Orders" asp-action="Index">Gerenciar Pedidos</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+

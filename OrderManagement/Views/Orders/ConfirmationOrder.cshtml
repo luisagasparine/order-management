@@ -1,0 +1,14 @@
+﻿@model int
+
+@{
+    ViewData["Title"] = "Pedido criado com sucesso";
+}
+
+<h2>@ViewData["Title"]</h2>
+
+<div class="alert alert-success">
+    <p>O pedido foi criado com sucesso!</p>
+    <p><strong>Número do Pedido:</strong> @Model</p>
+</div>
+
+<a asp-controller="Orders" asp-action="Index" class="btn btn-primary">Voltar para Pedidos</a>

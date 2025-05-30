@@ -1,0 +1,57 @@
+﻿@model Order
+
+@{
+    ViewData["Title"] = "Detalhes do Pedido";
+}
+
+<div class="container mt-4">
+    <h2>Detalhes do Pedido</h2>
+
+    <div class="card mb-4">
+        <div class="card-body">
+            <h5 class="card-title">Informações do Pedido</h5>
+            <p><strong>Número do Pedido:</strong> @Model.Id</p>
+            <p><strong>Data do Pedido:</strong> @Model.OrderDate.ToString("dd/MM/yyyy")</p>
+            <p><strong>Status:</strong> @Model.Status</p>
+            <p><strong>Valor Total:</strong> R$ @Model.TotalAmount.ToString("F2")</p>
+        </div>
+    </div>
+
+    <div class="card mb-4">
+        <div class="card-body">
+            <h5 class="card-title">Cliente</h5>
+            <p><strong>Nome:</strong> @Model.Customer.Name</p>
+            <p><strong>Email:</strong> @Model.Customer.Email</p>
+            <p><strong>Telefone:</strong> @Model.Customer.Phone</p>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-body">
+            <h5 class="card-title">Produtos</h5>
+            <table class="table table-bordered">
+                <thead>
+                    <tr>
+                        <th>Produto</th>
+                        <th>Quantidade</th>
+                        <th>Preço Unitário</th>
+                        <th>Total</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in Model.OrderItems)
+                    {
+                        <tr>
+                            <td>@item.Product.Name</td>
+                            <td>@item.Quantity</td>
+                            <td>R$ @item.UnitPrice.ToString("F2")</td>
+                            <td>R$ @(item.Quantity * item.UnitPrice)</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <a href="@Url.Action("Index", "Orders")" class="btn btn-secondary mt-3">Voltar</a>
+</div>

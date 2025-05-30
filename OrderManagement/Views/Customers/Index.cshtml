@@ -1,0 +1,304 @@
+﻿<div class="container mt-4">
+    <h1 class="text-center">Lista de clientes</h1>
+
+    <!-- Filter -->
+    <div class="row">
+        <div class="col-md-6 offset-md-3">
+            <form id="filter-form" class="mb-3">
+                <div class="row">
+                    <div class="col-md-6">
+                        <input type="text" id="filter-name" class="form-control" placeholder="Buscar por Nome">
+                    </div>
+                    <div class="col-md-6">
+                        <input type="email" id="filter-email" class="form-control" placeholder="Buscar por Email">
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="text-center mb-3">
+        <button class="btn btn-success" onclick="createCustomer()">Cadastrar Cliente</button>
+    </div>
+
+    <!-- Customers Table -->
+    <table class="table table-bordered">
+        <thead class="thead-dark">
+            <tr>
+                <th>ID</th>
+                <th>Nome</th>
+                <th>Email</th>
+                <th>Telefone</th>
+                <th>Data de Cadastro</th>
+                <th>Ações</th>
+            </tr>
+        </thead>
+        <tbody id="customer-table-body">
+            
+        </tbody>
+    </table>
+</div>
+
+<!-- Edit Modal -->
+<div class="modal fade" id="editModal" tabindex="-1" aria-labelledby="editModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="editModalLabel">Editar Cliente</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="edit-form">
+                    <div class="mb-3">
+                        <label for="edit-name" class="form-label">Nome</label>
+                        <input type="text" class="form-control" id="edit-name" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="edit-email" class="form-label">Email</label>
+                        <input type="email" class="form-control" id="edit-email" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="edit-phone" class="form-label">Telefone</label>
+                        <input type="text" class="form-control" id="edit-phone" required>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+                <button type="button" class="btn btn-primary" id="save-btn">Salvar Alterações</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Create Modal -->
+<div class="modal fade" id="createModal" tabindex="-1" aria-labelledby="createModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="createModalLabel">Cadastrar novo cliente</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="create-customer-form">
+                    <div class="mb-3">
+                        <label for="create-name" class="form-label">Nome</label>
+                        <input type="text" class="form-control" id="create-name" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="create-email" class="form-label">Email</label>
+                        <input type="email" class="form-control" id="create-email" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="create-phone" class="form-label">Telefone</label>
+                        <input type="text" class="form-control" id="create-phone" required>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+                <button type="button" class="btn btn-primary" id="save-customer-btn">Salvar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        let currentCustomerId = null;
+
+        // Function to fetch customers from the API based on filters
+        function getCustomers(name = "", email = "") {
+            let url = `https://localhost:7037/api/customers?name=${name}&email=${email}`;
+
+            $.ajax({
+                url: url,
+                type: 'GET',
+                success: function (data) {
+                    renderCustomerTable(data);
+                },
+                error: function (error) {
+                    console.error("Erro ao obter os clientes", error);
+
+                    if (error.responseJSON && error.responseJSON.message) {
+                        alert(error.responseJSON.message);
+                    } else {
+                        alert("Ocorreu um erro ao processar a solicitação. Tente novamente.");
+                    }
+                }
+            });
+        }
+
+        // Function to render the table with customer data
+        function renderCustomerTable(customers) {
+            const tableBody = $('#customer-table-body');
+            tableBody.empty();
+
+            customers.forEach(customer => {
+                    const rawDate = customer.registrationDate;
+                    const formattedDate = dayjs(rawDate, 'DD/MM/YYYY HH:mm:ss').format('DD/MM/YYYY');
+
+                    const row = `
+                                            <tr>
+                                                <td>${customer.id}</td>
+                                                <td>${customer.name}</td>
+                                                <td>${customer.email}</td>
+                                                <td>${customer.phone}</td>
+                                                <td>${formattedDate}</td>
+                                                <td>
+                                                    <button class="btn btn-info btn-sm" onclick="editCustomer(${customer.id})">Editar</button>
+                                                    <button class="btn btn-danger btn-sm" onclick="deleteCustomer(${customer.id})">Excluir</button>
+                                                </td>
+                                            </tr>
+                                        `;
+                    tableBody.append(row);
+                });
+                
+            
+        }
+
+        // Function to edit customers via the API
+        function editCustomer(customerId) {
+            currentCustomerId = customerId;
+            const url = `https://localhost:7037/api/customers/${customerId}`;
+
+            $.ajax({
+                url: url,
+                type: 'GET',
+                success: function (customer) {
+
+                    $('#edit-name').val(customer.name);
+                    $('#edit-email').val(customer.email);
+                    $('#edit-phone').val(customer.phone);
+
+                    $('#editModal').modal('show');
+                },
+                error: function (error) {
+                    console.error("Erro ao obter dados do cliente", error);
+
+                    if (error.responseJSON && error.responseJSON.message) {
+                        alert(error.responseJSON.message);
+                    } else {
+                        alert("Ocorreu um erro ao processar a solicitação. Tente novamente.");
+                    }
+                }
+            });
+        }
+
+        // Function to save the updates made to customer information.
+        $('#save-btn').on('click', function () {
+            const id = currentCustomerId;
+            const name = $('#edit-name').val();
+            const email = $('#edit-email').val();
+            const phone = $('#edit-phone').val();
+
+            if (name && email && phone) {
+                const url = `https://localhost:7037/api/customers/`;
+                const data = { id, name, email, phone };
+
+                $.ajax({
+                    url: url,
+                    type: 'PUT',
+                    data: JSON.stringify(data),
+                    contentType: 'application/json',
+                    success: function () {
+                        alert("Cliente atualizado com sucesso!");
+                        $('#editModal').modal('hide');
+                        getCustomers();
+                    },
+                    error: function (error) {
+                        console.error("Erro ao editar o cliente", error);
+
+                        if (error.responseJSON && error.responseJSON.message) {
+                            alert(error.responseJSON.message);
+                        } else {
+                            alert("Ocorreu um erro ao processar a solicitação. Tente novamente.");
+                        }
+                    }
+                });
+            } else {
+                alert("Preencha todos os campos!");
+            }
+        });
+
+
+        // Open Create Modal
+        function createCustomer() {
+            $('#createModal').modal('show');
+        }
+
+        // Register the new customer
+        $('#save-customer-btn').on('click', function () {
+            const name = $('#create-name').val();
+            const email = $('#create-email').val();
+            const phone = $('#create-phone').val();
+
+            if (name && email && phone) {
+                const data = {
+                    name: name,
+                    email: email,
+                    phone: phone
+                };
+
+                $.ajax({
+                    url: 'https://localhost:7037/api/customers/',
+                    type: 'POST',
+                    data: JSON.stringify(data),
+                    contentType: 'application/json',
+                    success: function (response) {
+                        alert("Cliente cadastrado com sucesso!");
+                        $('#createModal').modal('hide');
+                        getCustomers();
+                    },
+                    error: function (error) {
+                        console.error("Erro ao criar o cliente", error);
+
+                        if (error.responseJSON && error.responseJSON.message) {
+                            alert(error.responseJSON.message);
+                        } else {
+                            alert("Ocorreu um erro ao criar o cliente. Tente novamente.");
+                        }
+                    }
+                });
+            } else {
+                alert("Preencha todos os campos!");
+            }
+        });
+
+        // Delete customers
+        function deleteCustomer(customerId) {
+            if (confirm("Tem certeza que deseja excluir este cliente?")) {
+                const url = `https://localhost:7037/api/customers/${customerId}`;
+
+                $.ajax({
+                    url: url,
+                    type: 'DELETE',
+                    success: function () {
+                        alert("Cliente excluído com sucesso!");
+                        getCustomers();
+                    },
+                    error: function (error) {
+                        console.error("Erro ao excluir o cliente", error);
+
+                        if (error.responseJSON && error.responseJSON.message) {
+                            alert(error.responseJSON.message);
+                        } else {
+                            alert("Ocorreu um erro ao processar a solicitação. Tente novamente.");
+                        }
+                    }
+                });
+            }
+        }
+
+        // Dynamic table filtering
+        $('#filter-name, #filter-email').on('input', function () {
+            const name = $('#filter-name').val();
+            const email = $('#filter-email').val();
+            getCustomers(name, email);
+        });
+
+        $(document).ready(function () {
+            getCustomers(); // Initialize with all customers without filter
+        });
+    </script>
+}

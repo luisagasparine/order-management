@@ -1,0 +1,280 @@
+﻿<div class="container mt-4">
+    <h1 class="text-center">Lista de Produtos</h1>
+
+    <!-- Filter -->
+    <div class="row">
+        <div class="col-md-6 offset-md-3">
+            <form id="filter-form" class="mb-3">
+                <input type="text" id="filter-name" class="form-control" placeholder="Buscar por Nome">
+            </form>
+        </div>
+    </div>
+
+    <div class="text-center mb-3">
+        <button class="btn btn-success" onclick="createProduct()">Cadastrar Produto</button>
+    </div>
+
+    <!-- Products Table -->
+    <table class="table table-bordered">
+        <thead class="thead-dark">
+            <tr>
+                <th>ID</th>
+                <th>Nome</th>
+                <th>Descrição</th>
+                <th>Preço</th>
+                <th>Estoque</th>
+                <th>Ações</th>
+            </tr>
+        </thead>
+        <tbody id="product-table-body">
+       
+        </tbody>
+    </table>
+</div>
+
+<!-- Products Modal -->
+<div class="modal fade" id="createModal" tabindex="-1" aria-labelledby="createModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="createModalLabel">Criar Produto</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="create-product-form">
+                    <div class="mb-3">
+                        <label for="create-name" class="form-label">Nome</label>
+                        <input type="text" class="form-control" id="create-name" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="create-description" class="form-label">Descrição</label>
+                        <input type="text" class="form-control" id="create-description" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="create-price" class="form-label">Preço</label>
+                        <input type="number" class="form-control" id="create-price" step="0.01" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="create-stock" class="form-label">Quantidade em Estoque</label>
+                        <input type="number" class="form-control" id="create-stock" required>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+                <button type="button" class="btn btn-primary" id="save-product-btn">Salvar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Modal -->
+<div class="modal fade" id="editModal" tabindex="-1" aria-labelledby="editModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="editModalLabel">Editar Produto</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="edit-form">
+                    <div class="mb-3">
+                        <label for="edit-name" class="form-label">Nome</label>
+                        <input type="text" class="form-control" id="edit-name" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="edit-email" class="form-label">Descrição</label>
+                        <input type="email" class="form-control" id="edit-description" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="edit-phone" class="form-label">Preço</label>
+                        <input type="number" class="form-control" id="edit-price" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="edit-stock" class="form-label">Estoque</label>
+                        <input type="number" class="form-control" id="edit-stock" required>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+                <button type="button" class="btn btn-primary" id="save-btn">Salvar Alterações</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // Loads the products via API with or without filter
+        function getProducts(name = "") {
+            $.ajax({
+                url: `https://localhost:7037/api/products?name=${name}`,
+                type: 'GET',
+                success: function (data) {
+                    const tableBody = $('#product-table-body');
+                    tableBody.empty();
+                    data.forEach(product => {
+                        const row = `
+                                            <tr>
+                                                <td>${product.id}</td>
+                                                <td>${product.name}</td>
+                                                <td>${product.description}</td>
+                                                <td>R$ ${product.price.toFixed(2)}</td>
+                                                <td>${product.stockQuantity}</td>
+                                                <td>
+                                                    <button class="btn btn-info btn-sm" onclick="editProduct(${product.id})">Editar</button>
+                                                    <button class="btn btn-danger btn-sm" onclick="deleteProduct(${product.id})">Excluir</button>
+                                                </td>
+                                            </tr>`;
+                        tableBody.append(row);
+                    });
+                },
+                error: function (error) {
+                    console.error("Erro ao obter os produtos", error);
+
+                    if (error.responseJSON && error.responseJSON.message) {
+                        alert(error.responseJSON.message);
+                    } else {
+                        alert("Ocorreu um erro ao processar a solicitação. Tente novamente.");
+                    }
+                }
+            });
+        }
+
+        // Open Create Modal
+        function createProduct() {
+            $('#createModal').modal('show');
+        }
+
+        // Registers a new product through the API
+        $('#save-product-btn').on('click', function () {
+            const newProduct = {
+                name: $('#create-name').val(),
+                description: $('#create-description').val(),
+                price: parseFloat($('#create-price').val()),
+                stockQuantity: parseInt($('#create-stock').val())
+            };
+
+            $.ajax({
+                url: 'https://localhost:7037/api/products',
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify(newProduct),
+                success: function () {
+                    alert('Produto criado com sucesso!');
+                    $('#createModal').modal('hide');
+                    getProducts();
+                },
+                error: function (error) {
+                    console.error("Erro ao criar produto", error);
+
+                    if (error.responseJSON && error.responseJSON.message) {
+                        alert(error.responseJSON.message);
+                    } else {
+                        alert("Ocorreu um erro ao processar a solicitação. Tente novamente.");
+                    }
+                }
+            });
+        });
+
+        // Edits product through the API
+        function editProduct(productId) {
+            currentProductId = productId;
+            const url = `https://localhost:7037/api/products/${productId}`;
+
+            $.ajax({
+                url: url,
+                type: 'GET',
+                success: function (product) {
+                    $('#edit-name').val(product.name);
+                    $('#edit-description').val(product.description);
+                    $('#edit-price').val(product.price);
+                    $('#edit-stock').val(product.stockQuantity);
+
+                    $('#editModal').modal('show');
+                },
+                error: function (error) {
+                    console.error("Erro ao obter dados do produto", error);
+
+                    if (error.responseJSON && error.responseJSON.message) {
+                        alert(error.responseJSON.message);
+                    } else {
+                        alert("Ocorreu um erro ao processar a solicitação. Tente novamente.");
+                    }
+                }
+            });
+        }
+
+        // Function to save the product changes
+        $('#save-btn').on('click', function () {
+            const id = currentProductId;
+            const name = $('#edit-name').val();
+            const description = $('#edit-description').val();
+            const price = $('#edit-price').val();
+            const stockQuantity = $('#edit-stock').val();
+
+
+            if (name && description && price && stockQuantity) {
+                const url = `https://localhost:7037/api/products/`;
+                const data = { id, name, description, price, stockQuantity };
+
+                $.ajax({
+                    url: url,
+                    type: 'PUT',
+                    data: JSON.stringify(data),
+                    contentType: 'application/json',
+                    success: function (response) {
+                        alert("Produto atualizado com sucesso!");
+                        $('#editModal').modal('hide');
+                        getProducts();
+                    },
+                    error: function (error) {
+                        console.error("Erro ao editar o produto", error);
+
+                        if (error.responseJSON && error.responseJSON.message) {
+                            alert(error.responseJSON.message);
+                        } else {
+                            alert("Ocorreu um erro ao processar a solicitação. Tente novamente.");
+                        }
+                    }
+                });
+            } else {
+                alert("Preencha todos os campos!");
+            }
+        });
+
+        // Delete product
+        function deleteProduct(id) {
+            if (confirm("Tem certeza que deseja excluir este produto?")) {
+                $.ajax({
+                    url: `https://localhost:7037/api/products/${id}`,
+                    type: 'DELETE',
+                    success: function () {
+                        alert("Produto excluído com sucesso!");
+                        getProducts();
+                    },
+                    error: function (error) {
+                        console.error("Erro ao excluir o produto", error);
+
+                        if (error.responseJSON && error.responseJSON.message) {
+                            alert(error.responseJSON.message);
+                        } else {
+                            alert("Ocorreu um erro ao processar a solicitação. Tente novamente.");
+                        }
+                    }
+                });
+            }
+        }
+
+        // Apply filter on input change (no need for a button click)
+        $('#filter-name').on('input', function () {
+            const name = $(this).val();
+            getProducts(name);
+        });
+
+        $(document).ready(function () {
+            getProducts();
+        });
+    </script>
+}
